@@ -17,53 +17,81 @@ export default function CheckoutPage() {
   const deliveryFee = 1000;
   const grandTotal = cartTotal + deliveryFee;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (
+  event: React.FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
 
-    if (!customerName.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
+  if (!customerName.trim()) {
+    setError("Please enter your name.");
+    return;
+  }
 
-    if (!phone.trim()) {
-      setError("Please enter your phone number.");
-      return;
-    }
+  if (!phone.trim()) {
+    setError("Please enter your phone number.");
+    return;
+  }
 
-    if (!address.trim()) {
-      setError("Please enter your delivery address.");
-      return;
-    }
+  if (!address.trim()) {
+    setError("Please enter your delivery address.");
+    return;
+  }
 
-    if (cartItems.length === 0) {
-      setError("Your cart is empty.");
-      return;
-    }
+  if (cartItems.length === 0) {
+    setError("Your cart is empty.");
+    return;
+  }
 
-    setError("");
-    setIsSubmitting(true);
+  setError("");
+  setIsSubmitting(true);
 
-    const orderId = `FAM-${Date.now()}`;
+  const orderId = `FAM-${Date.now()}`;
 
-    localStorage.setItem(
-      "famzi-order",
-      JSON.stringify({
+  try {
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
         orderId,
-        customerName,
-        phone,
-        address,
-        note,
+        customerName: customerName.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        note: note.trim(),
         items: cartItems,
         subtotal: cartTotal,
         deliveryFee,
         total: grandTotal,
-        createdAt: new Date().toISOString(),
-        status: "Received",
-      })
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Failed to place your order."
+      );
+    }
+
+    localStorage.setItem(
+      "famzi-order",
+      JSON.stringify(data.order)
     );
 
     window.location.href = "/order-confirmation";
-  };
+  } catch (error) {
+    console.error("Order submission failed:", error);
+
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong while placing your order."
+    );
+
+    setIsSubmitting(false);
+  }
+};
 
   if (cartItems.length === 0 && !isSubmitting) {
     return (

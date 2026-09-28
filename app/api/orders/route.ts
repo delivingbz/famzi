@@ -76,3 +76,82 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      orders,
+    });
+  } catch (error) {
+    console.error("Failed to fetch orders:", error);
+
+    return NextResponse.json(
+      { error: "Failed to fetch orders." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+
+    const { id, status } = body;
+
+    const allowedStatuses = [
+      "Received",
+      "Accepted",
+      "Preparing",
+      "Ready",
+      "Completed",
+    ];
+
+    if (!id || !status) {
+      return NextResponse.json(
+        { error: "Order ID and status are required." },
+        { status: 400 }
+      );
+    }
+
+    if (!allowedStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: "Invalid order status." },
+        { status: 400 }
+      );
+    }
+
+    const order = await prisma.order.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        status,
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    console.error("Failed to update order:", error);
+
+    return NextResponse.json(
+      { error: "Failed to update order." },
+      { status: 500 }
+    );
+  }
+}

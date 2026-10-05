@@ -1,15 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
+import CartMenuReviewNotice from "@/components/CartMenuReviewNotice";
+import { useCartMenuSync } from "@/hooks/useCartMenuSync";
 
 export default function CartPage() {
+  const router = useRouter();
+  const { isChecking, error: menuCheckError, checkMenu } = useCartMenuSync();
   const {
     cartItems,
     increaseQuantity,
     decreaseQuantity,
     removeFromCart,
     cartTotal,
+    menuReviewChanges,
   } = useCart();
 
   if (cartItems.length === 0) {
@@ -23,9 +29,27 @@ export default function CartPage() {
           </h1>
 
           <p className="mt-3 max-w-md text-sm leading-6 text-black/50">
-            Looks like you haven&apos;t added anything to your order yet.
-            Explore our menu and find something delicious.
+            {menuReviewChanges?.unavailableItems.length
+              ? "Some items became unavailable and were removed from your cart. Browse the menu to choose replacements."
+              : "Looks like you haven't added anything to your order yet. Explore our menu and find something delicious."}
           </p>
+
+          <CartMenuReviewNotice changes={menuReviewChanges} />
+
+          {menuCheckError && (
+            <div className="mt-5">
+              <p role="alert" className="text-sm font-semibold text-red-600">
+                {menuCheckError}
+              </p>
+              <button
+                type="button"
+                onClick={() => void checkMenu()}
+                className="mt-3 text-sm font-bold text-orange-600"
+              >
+                Try again
+              </button>
+            </div>
+          )}
 
           <Link
             href="/menu"
@@ -57,6 +81,28 @@ export default function CartPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6 space-y-3">
+          {isChecking && (
+            <p className="text-sm font-semibold text-black/45">
+              Checking current menu prices and availability...
+            </p>
+          )}
+          {menuCheckError && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+              <p role="alert" className="text-sm font-semibold text-red-600">
+                {menuCheckError}
+              </p>
+              <button
+                type="button"
+                onClick={() => void checkMenu()}
+                className="text-sm font-bold text-red-700 underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          <CartMenuReviewNotice changes={menuReviewChanges} />
+        </div>
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           {/* Cart items */}
           <div className="space-y-4">
@@ -162,12 +208,14 @@ export default function CartPage() {
               </div>
             </div>
 
-            <Link
-                  href="/checkout"
-                   className="mt-6 block w-full rounded-2xl bg-orange-500 py-4 text-center text-sm font-black text-white transition hover:bg-orange-600"
+            <button
+              type="button"
+              onClick={() => router.push("/checkout")}
+              disabled={isChecking || Boolean(menuCheckError)}
+              className="mt-6 block w-full rounded-2xl bg-orange-500 py-4 text-center text-sm font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
-                    Proceed to Checkout
-            </Link>
+              {isChecking ? "Checking menu..." : "Proceed to Checkout"}
+            </button>
             
 
             <Link

@@ -17,6 +17,9 @@ type Order = {
   customerName: string;
   phone: string;
   address: string;
+  fulfillmentType: "Delivery" | "Pickup";
+  paymentMethod: string | null;
+  paymentStatus: string | null;
   note: string | null;
   subtotal: number;
   deliveryFee: number;
@@ -24,6 +27,29 @@ type Order = {
   status: string;
   createdAt: string;
   items: OrderItem[];
+};
+
+const orderStatuses = [
+  "Received",
+  "Accepted",
+  "Preparing",
+  "Ready",
+  "Completed",
+] as const;
+
+const nextStatusMap: Record<string, string | null> = {
+  Received: "Accepted",
+  Accepted: "Preparing",
+  Preparing: "Ready",
+  Ready: "Completed",
+  Completed: null,
+};
+
+const nextStatusLabel: Record<string, string> = {
+  Received: "Accept Order",
+  Accepted: "Start Preparing",
+  Preparing: "Mark Ready",
+  Ready: "Complete Order",
 };
 
 export default function AdminOrderDetailsPage() {
@@ -125,6 +151,31 @@ export default function AdminOrderDetailsPage() {
     }
   };
 
+  const updatePaymentStatus = async (paymentStatus: "Awaiting Transfer" | "Awaiting WhatsApp Confirmation" | "Paid") => {
+    if (!order) return;
+    setIsUpdating(true);
+    setUpdateMessage("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: order.id, paymentStatus }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update payment status.");
+      }
+      setOrder(data.order);
+      setUpdateMessage(`Payment status updated to ${paymentStatus}.`);
+    } catch (error) {
+      setUpdateMessage(
+        error instanceof Error ? error.message : "Failed to update payment status.",
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#f7f4ef] px-4 py-8">
@@ -160,6 +211,20 @@ export default function AdminOrderDetailsPage() {
     );
   }
 
+  const nextStatus = order
+  ? nextStatusMap[order.status]
+  : null;
+
+const nextActionLabel = order
+  ? nextStatusLabel[order.status]
+  : null;
+
+const currentStatusIndex = order
+  ? orderStatuses.findIndex(
+      (status) => status === order.status
+    )
+  : -1;
+
   return (
     <main className="min-h-screen bg-[#f7f4ef] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
@@ -189,61 +254,174 @@ export default function AdminOrderDetailsPage() {
           </div>
 
           {/* Status Controls */}
-          <div className="flex flex-col items-start gap-3 sm:items-end">
-            <span className="w-fit rounded-full bg-orange-50 px-4 py-2 text-sm font-black text-orange-600">
-              {order.status}
-            </span>
 
-            <select
-              value={order.status}
-              onChange={(event) =>
-                updateStatus(event.target.value)
-              }
-              disabled={isUpdating}
-              className="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-bold text-[#171717] outline-none transition focus:border-orange-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="Received">
-                Received
-              </option>
+<div className="flex flex-col items-start gap-3 sm:items-end">
 
-              <option value="Accepted">
-                Accepted
-              </option>
+  {/* Current Status */}
+  <span className="w-fit rounded-full bg-orange-50 px-4 py-2 text-sm font-black text-orange-600">
+    {order.status}
+  </span>
 
-              <option value="Preparing">
-                Preparing
-              </option>
+  {/* Next Action */}
+  {nextStatus && nextActionLabel && (
+    <button
+      type="button"
+      onClick={() => updateStatus(nextStatus)}
+      disabled={isUpdating}
+      className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {isUpdating
+        ? "Updating..."
+        : nextActionLabel}
+    </button>
+  )}
 
-              <option value="Ready">
-                Ready
-              </option>
+  {/* Completed State */}
+  {order.status === "Completed" && (
+    <p className="text-sm font-semibold text-green-600">
+      ✓ Order completed
+    </p>
+  )}
 
-              <option value="Completed">
-                Completed
-              </option>
-            </select>
+  {/* Manual Status Control */}
+  <details className="w-full sm:w-auto">
+    <summary className="cursor-pointer text-xs font-bold text-black/40">
+      Change status manually
+    </summary>
 
-            {isUpdating && (
-              <p className="text-xs font-semibold text-black/40">
-                Updating status...
-              </p>
-            )}
+    <select
+      value={order.status}
+      onChange={(event) =>
+        updateStatus(event.target.value)
+      }
+      disabled={isUpdating}
+      className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-bold text-[#171717] outline-none transition focus:border-orange-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+    >
+      <option value="Received">
+        Received
+      </option>
 
-            {!isUpdating && updateMessage && (
-              <p
-                className={`text-xs font-semibold ${
-                  updateMessage.startsWith(
-                    "Order status updated"
-                  )
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {updateMessage}
-              </p>
-            )}
-          </div>
+      <option value="Accepted">
+        Accepted
+      </option>
+
+      <option value="Preparing">
+        Preparing
+      </option>
+
+      <option value="Ready">
+        Ready
+      </option>
+
+      <option value="Completed">
+        Completed
+      </option>
+    </select>
+  </details>
+
+  {order.paymentMethod && (
+    <label className="w-full text-xs font-bold text-black/45 sm:w-auto">
+      Payment status
+      <select
+        value={order.paymentStatus || "Awaiting Transfer"}
+        onChange={(event) =>
+          void updatePaymentStatus(
+            event.target.value as "Awaiting Transfer" | "Awaiting WhatsApp Confirmation" | "Paid",
+          )
+        }
+        disabled={isUpdating}
+        className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-bold text-[#171717] sm:w-auto"
+      >
+        <option value="Awaiting Transfer">Awaiting Transfer</option>
+        <option value="Awaiting WhatsApp Confirmation">Awaiting WhatsApp Confirmation</option>
+        <option value="Paid">Paid</option>
+      </select>
+    </label>
+  )}
+
+  {/* Update Message */}
+  {!isUpdating && updateMessage && (
+    <p
+      className={`text-xs font-semibold ${
+        updateMessage.startsWith("Order status updated") ||
+        updateMessage.startsWith("Payment status updated")
+          ? "text-green-600"
+          : "text-red-600"
+      }`}
+    >
+      {updateMessage}
+    </p>
+  )}
+
+</div>
         </div>
+
+        {/* Order Progress */}
+        <section className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
+          <div>
+            <h2 className="text-xl font-black">Order Progress</h2>
+            <p className="mt-1 text-sm text-black/45">
+              Track this order through the kitchen workflow.
+            </p>
+          </div>
+
+          <div className="mt-6">
+            {orderStatuses.map((status, index) => {
+              const isCompleted = index < currentStatusIndex;
+              const isCurrent = index === currentStatusIndex;
+              const isUpcoming = index > currentStatusIndex;
+
+              return (
+                <div key={status} className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ${
+                        isCompleted
+                          ? "bg-orange-500 text-white"
+                          : isCurrent
+                            ? "bg-orange-500 text-white ring-4 ring-orange-100"
+                            : "bg-black/5 text-black/30"
+                      }`}
+                    >
+                      {isCompleted ? "✓" : index + 1}
+                    </div>
+
+                    {index < orderStatuses.length - 1 && (
+                      <div
+                        className={`h-10 w-px ${
+                          index < currentStatusIndex
+                            ? "bg-orange-500"
+                            : "bg-black/10"
+                        }`}
+                      />
+                    )}
+                  </div>
+
+                  <div className="pb-5">
+                    <p
+                      className={`text-sm font-black ${
+                        isCurrent
+                          ? "text-orange-500"
+                          : isUpcoming
+                            ? "text-black/35"
+                            : "text-black"
+                      }`}
+                    >
+                      {status}
+                    </p>
+                    <p className="mt-1 text-xs text-black/40">
+                      {isCurrent
+                        ? "Current stage"
+                        : isCompleted
+                          ? "Completed"
+                          : "Upcoming"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         {/* Main Content */}
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
@@ -287,11 +465,15 @@ export default function AdminOrderDetailsPage() {
                 {/* Address */}
                 <div className="sm:col-span-2">
                   <p className="text-xs font-bold uppercase tracking-wide text-black/35">
-                    Delivery Address
+                    {order.fulfillmentType === "Pickup" ? "Pickup Point / Address" : "Delivery Address"}
                   </p>
 
                   <p className="mt-1 text-sm font-semibold text-black/75">
-                    {order.address}
+                    <span className="block">{order.fulfillmentType}</span>
+                    <span className="mt-1 block">{order.address}</span>
+                    <span className="mt-1 block text-xs text-black/45">
+                      {order.paymentMethod || "Payment not recorded"} · {order.paymentStatus || "Status unavailable"}
+                    </span>
                   </p>
                 </div>
 
@@ -373,10 +555,10 @@ export default function AdminOrderDetailsPage() {
 
                 {/* Delivery */}
                 <div className="flex justify-between gap-4 text-white/60">
-                  <span>Delivery</span>
+                  <span>{order.fulfillmentType === "Pickup" ? "Pickup" : "Delivery"}</span>
 
                   <span>
-                    ₦{order.deliveryFee.toLocaleString()}
+                    {order.deliveryFee === 0 ? "Free" : `₦${order.deliveryFee.toLocaleString()}`}
                   </span>
                 </div>
 

@@ -1,5 +1,6 @@
 
 "use client";
+import { useState } from "react";
 import type { MenuItem } from "@/data/menu";
 import { useCart } from "@/components/CartProvider";
 
@@ -9,12 +10,22 @@ type FoodCardProps = {
 
 export default function FoodCard({ item }: FoodCardProps) {
   const { addToCart } = useCart();
+  const [imageFailed, setImageFailed] = useState(false);
   return (
     <article className="group overflow-hidden rounded-3xl border border-black/5 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <div className="relative aspect-[4/3] overflow-hidden bg-orange-50">
         <div className="flex h-full items-center justify-center text-6xl">
           🍽️
         </div>
+
+        {item.image && !imageFailed && (
+          <img
+            src={item.image}
+            alt={item.name}
+            onError={() => setImageFailed(true)}
+            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+        )}
 
         {item.popular && (
           <span className="absolute left-4 top-4 rounded-full bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg">

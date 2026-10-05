@@ -38,10 +38,38 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/#about"
+            href="/about"
             className="rounded-full px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
           >
             About
+          </Link>
+
+          <div className="group relative">
+            <Link href="/services" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400">
+              Services <span aria-hidden="true" className="text-xs transition group-hover:rotate-180 group-focus-within:rotate-180">⌄</span>
+            </Link>
+            <div className="invisible absolute left-0 top-full z-50 w-60 translate-y-2 pt-2 opacity-0 transition duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+             <div className="rounded-2xl border border-white/10 bg-[#222] p-2 shadow-2xl">
+              <Link href="/services" className="block rounded-xl px-3 py-2 text-sm font-bold text-orange-400 transition hover:bg-white/10">All services</Link>
+              {[
+                ["Cakes", "cakes"],
+                ["Small chops", "small-chops"],
+                ["Pastries", "pastries"],
+                ["Catering", "catering"],
+                ["Event Management", "event-management"],
+                ["Need a chef?", "private-chef"],
+              ].map(([label, id]) => (
+                <Link key={id} href={`/services#${id}`} className="block rounded-xl px-3 py-2 text-sm text-white/75 transition hover:bg-white/10 hover:text-white">{label}</Link>
+              ))}
+             </div>
+            </div>
+          </div>
+
+          <Link
+            href="/contact"
+            className="rounded-full px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+          >
+            Contact Us
           </Link>
 
           {/* Cart */}
@@ -111,11 +139,38 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/#about"
+              href="/about"
               onClick={() => setIsMenuOpen(false)}
               className="rounded-2xl px-4 py-3 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
             >
               About
+            </Link>
+
+            <details className="group rounded-2xl px-4 py-3 text-sm font-semibold text-white/70">
+              <summary className="flex cursor-pointer list-none items-center justify-between [&::-webkit-details-marker]:hidden">
+                Services <span aria-hidden="true" className="text-xs transition group-open:rotate-180">⌄</span>
+              </summary>
+              <div className="mt-3 flex flex-col gap-1 border-l border-white/15 pl-3">
+                <Link href="/services" onClick={() => setIsMenuOpen(false)} className="rounded-lg py-2 font-bold text-orange-400">All services</Link>
+                {[
+                  ["Cakes", "cakes"],
+                  ["Small chops", "small-chops"],
+                  ["Pastries", "pastries"],
+                  ["Catering", "catering"],
+                  ["Event Management", "event-management"],
+                  ["Need a chef?", "private-chef"],
+                ].map(([label, id]) => (
+                  <Link key={id} href={`/services#${id}`} onClick={() => setIsMenuOpen(false)} className="rounded-lg py-2 text-white/70 transition hover:text-white">{label}</Link>
+                ))}
+              </div>
+            </details>
+
+            <Link
+              href="/contact"
+              onClick={() => setIsMenuOpen(false)}
+              className="rounded-2xl px-4 py-3 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+            >
+              Contact Us
             </Link>
 
             <Link

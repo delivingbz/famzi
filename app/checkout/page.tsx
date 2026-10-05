@@ -3,24 +3,52 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/CartProvider";
+import CartMenuReviewNotice from "@/components/CartMenuReviewNotice";
+import { useCartMenuSync } from "@/hooks/useCartMenuSync";
 
 export default function CheckoutPage() {
-  const { cartItems, cartTotal } = useCart();
+  const {
+    cartItems,
+    cartTotal,
+    menuReviewChanges,
+    acknowledgeMenuChanges,
+    clearCart,
+  } = useCart();
+  const { isChecking, error: menuCheckError, checkMenu } = useCartMenuSync();
 
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [fulfillmentType, setFulfillmentType] = useState<"Delivery" | "Pickup">("Delivery");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const deliveryFee = 1000;
+  const deliveryFee = fulfillmentType === "Delivery" ? 1000 : 0;
   const grandTotal = cartTotal + deliveryFee;
+  const [reviewedGrandTotal, setReviewedGrandTotal] = useState<number | null>(null);
+  const needsMenuReview = Boolean(
+    menuReviewChanges &&
+      (menuReviewChanges.priceChanges.length > 0 ||
+        menuReviewChanges.renamedItems.length > 0 ||
+        menuReviewChanges.unavailableItems.length > 0),
+  );
 
   const handleSubmit = async (
   event: React.FormEvent<HTMLFormElement>
 ) => {
   event.preventDefault();
+
+  if (isChecking || menuCheckError) {
+    setError(
+      menuCheckError || "Please wait while we check current menu prices.",
+    );
+    return;
+  }
+
+  if (needsMenuReview) {
+    setError("Please review and confirm the updated order total.");
+    return;
+  }
 
   if (!customerName.trim()) {
     setError("Please enter your name.");
@@ -32,8 +60,16 @@ export default function CheckoutPage() {
     return;
   }
 
+  const phoneDigits = phone.replace(/\D/g, "");
+  if (!/^\+?[0-9\s()-]+$/.test(phone.trim()) || phoneDigits.length < 10 || phoneDigits.length > 15) {
+    setError("Please enter a valid phone number with 10 to 15 digits.");
+    return;
+  }
+
   if (!address.trim()) {
-    setError("Please enter your delivery address.");
+    setError(fulfillmentType === "Delivery"
+      ? "Please enter your delivery address."
+      : "Please enter your pickup point or address.");
     return;
   }
 
@@ -58,6 +94,8 @@ export default function CheckoutPage() {
         customerName: customerName.trim(),
         phone: phone.trim(),
         address: address.trim(),
+        fulfillmentType,
+        paymentMethod: "WhatsApp",
         note: note.trim(),
         items: cartItems,
         subtotal: cartTotal,
@@ -69,17 +107,21 @@ export default function CheckoutPage() {
     const data = await response.json();
 
     if (!response.ok) {
+      if (response.status === 409) {
+        setReviewedGrandTotal(null);
+        await checkMenu();
+        throw new Error(
+          "The menu changed while you were checking out. We refreshed your cart. Review the updated items and total before placing your order.",
+        );
+      }
       throw new Error(
         data.error || "Failed to place your order."
       );
     }
 
-    localStorage.setItem(
-      "famzi-order",
-      JSON.stringify(data.order)
-    );
-
-    window.location.href = "/order-confirmation";
+    localStorage.setItem("famzi-order", JSON.stringify({ ...data.order, whatsappUrl: data.whatsappUrl }));
+    clearCart();
+    window.location.href = data.whatsappUrl || "/order-confirmation";
   } catch (error) {
     console.error("Order submission failed:", error);
 
@@ -104,8 +146,29 @@ export default function CheckoutPage() {
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-black/50">
-            Add some delicious meals before proceeding to checkout.
+            {menuReviewChanges?.unavailableItems.length
+              ? "Some items became unavailable and were removed from your cart. Choose replacements from the menu."
+              : "Add some delicious meals before proceeding to checkout."}
           </p>
+
+          <div className="mt-5 w-full text-left">
+            <CartMenuReviewNotice changes={menuReviewChanges} />
+          </div>
+
+          {menuCheckError && (
+            <div className="mt-4">
+              <p role="alert" className="text-sm font-semibold text-red-600">
+                {menuCheckError}
+              </p>
+              <button
+                type="button"
+                onClick={() => void checkMenu()}
+                className="mt-3 text-sm font-bold text-orange-600"
+              >
+                Try again
+              </button>
+            </div>
+          )}
 
           <Link
             href="/menu"
@@ -131,7 +194,7 @@ export default function CheckoutPage() {
           </h1>
 
           <p className="mt-3 text-sm text-black/50">
-            Tell us where to deliver your order.
+            Choose pickup or delivery and enter your contact details.
           </p>
         </div>
       </section>
@@ -144,10 +207,66 @@ export default function CheckoutPage() {
             className="rounded-3xl bg-white p-6 shadow-sm sm:p-8"
           >
             <h2 className="text-xl font-black text-[#171717]">
-              Customer Details
+              Fulfillment and Customer Details
             </h2>
 
             <div className="mt-6 space-y-5">
+              {isChecking && (
+                <p className="rounded-xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">
+                  Checking current menu prices and availability...
+                </p>
+              )}
+              {menuCheckError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                  <p role="alert" className="text-sm font-semibold text-red-600">
+                    {menuCheckError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void checkMenu()}
+                    className="mt-2 text-sm font-bold text-red-700 underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+              <CartMenuReviewNotice changes={menuReviewChanges} />
+
+              <fieldset>
+                <legend className="mb-2 block text-sm font-bold text-[#171717]">
+                  How would you like to receive your order?
+                </legend>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(["Delivery", "Pickup"] as const).map((option) => (
+                    <label
+                      key={option}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${
+                        fulfillmentType === option
+                          ? "border-orange-500 bg-orange-50"
+                          : "border-black/10 bg-white hover:border-orange-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="fulfillmentType"
+                        value={option}
+                        checked={fulfillmentType === option}
+                        onChange={() => setFulfillmentType(option)}
+                        className="mt-1 accent-orange-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-bold">{option}</span>
+                        <span className="mt-1 block text-xs text-black/50">
+                          {option === "Delivery"
+                            ? "We bring your order to your address."
+                            : "Tell us the pickup point or address and we will coordinate with you."}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
               {/* Full Name */}
               <div>
                 <label
@@ -196,7 +315,7 @@ export default function CheckoutPage() {
                   htmlFor="address"
                   className="mb-2 block text-sm font-bold text-[#171717]"
                 >
-                  Delivery Address
+                  {fulfillmentType === "Delivery" ? "Delivery Address" : "Pickup Point / Address"}
                 </label>
 
                 <textarea
@@ -205,7 +324,9 @@ export default function CheckoutPage() {
                   onChange={(event) =>
                     setAddress(event.target.value)
                   }
-                  placeholder="Enter your complete delivery address"
+                  placeholder={fulfillmentType === "Delivery"
+                    ? "Enter your complete delivery address"
+                    : "Enter the address or pickup point where you will collect your order"}
                   rows={4}
                   className="w-full resize-none rounded-2xl border border-black/10 bg-[#fafafa] px-4 py-3.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
                 />
@@ -234,6 +355,13 @@ export default function CheckoutPage() {
                   className="w-full resize-none rounded-2xl border border-black/10 bg-[#fafafa] px-4 py-3.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
                 />
               </div>
+
+              <div className="rounded-2xl border border-green-100 bg-green-50 p-5">
+                <p className="text-sm font-black text-[#171717]">Confirm payment on WhatsApp</p>
+                <p className="mt-2 text-sm leading-6 text-black/60">
+                  Place your order to save it, then WhatsApp will open with your order details. Send the message to coordinate and confirm payment with Dfamiliz.
+                </p>
+              </div>
             </div>
 
             {/* Error */}
@@ -243,10 +371,38 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {needsMenuReview && (
+              <label className="mt-5 flex items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm font-semibold text-orange-950">
+                <input
+                  type="checkbox"
+                  checked={reviewedGrandTotal === grandTotal}
+                  onChange={(event) => {
+                    if (event.target.checked) {
+                      setReviewedGrandTotal(grandTotal);
+                      setError("");
+                      acknowledgeMenuChanges();
+                    } else {
+                      setReviewedGrandTotal(null);
+                    }
+                  }}
+                  className="mt-0.5 h-4 w-4 accent-orange-500"
+                />
+                <span>
+                  I reviewed the updated items and confirm the new total of ₦
+                  {grandTotal.toLocaleString()}.
+                </span>
+              </label>
+            )}
+
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={
+                isSubmitting ||
+                isChecking ||
+                Boolean(menuCheckError) ||
+                needsMenuReview
+              }
               className="mt-7 w-full rounded-2xl bg-orange-500 py-4 text-sm font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting
@@ -295,10 +451,10 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex items-center justify-between text-white/60">
-                <span>Delivery</span>
+                <span>{fulfillmentType === "Delivery" ? "Delivery" : "Pickup"}</span>
 
                 <span>
-                  ₦{deliveryFee.toLocaleString()}
+                  {deliveryFee === 0 ? "Free" : `₦${deliveryFee.toLocaleString()}`}
                 </span>
               </div>
             </div>

@@ -17,6 +17,9 @@ type Order = {
   customerName: string;
   phone: string;
   address: string;
+  fulfillmentType: "Delivery" | "Pickup";
+  paymentMethod: string | null;
+  paymentStatus: string | null;
   note: string | null;
   subtotal: number;
   deliveryFee: number;
@@ -32,9 +35,17 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let isMounted = true;
+    let isFetching = false;
+
     async function loadOrders() {
+      if (isFetching) return;
+      isFetching = true;
+
       try {
-        const response = await fetch("/api/orders");
+        const response = await fetch("/api/orders", {
+          cache: "no-store",
+        });
 
         const data = await response.json();
 
@@ -44,21 +55,33 @@ export default function AdminOrdersPage() {
           );
         }
 
-        setOrders(data.orders);
+        if (isMounted) {
+          setOrders(data.orders);
+          setError("");
+        }
       } catch (error) {
         console.error("Failed to load orders:", error);
 
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load orders."
-        );
+        if (isMounted) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : "Failed to load orders."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        isFetching = false;
+        if (isMounted) setIsLoading(false);
       }
     }
 
     loadOrders();
+    const interval = setInterval(loadOrders, 15000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const receivedOrders = orders.filter(
@@ -215,8 +238,12 @@ export default function AdminOrdersPage() {
                           {order.phone}
                         </p>
 
+                        <p className="mt-1 text-xs font-bold text-orange-600">
+                          {order.fulfillmentType} · {order.paymentMethod || "Payment not recorded"} · {order.paymentStatus || "Status unavailable"}
+                        </p>
+
                         <p className="mt-1 text-sm text-black/55">
-                          {order.address}
+                          {order.fulfillmentType === "Pickup" ? "Pickup point: " : "Delivery: "}{order.address}
                         </p>
 
                       </div>

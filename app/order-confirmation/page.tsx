@@ -10,6 +10,10 @@ type OrderData = {
   customerName: string;
   phone: string;
   address: string;
+  fulfillmentType: "Delivery" | "Pickup";
+  paymentMethod: string | null;
+  paymentStatus: string | null;
+  whatsappUrl?: string | null;
   note: string;
   items: CartItem[];
   subtotal: number;
@@ -131,16 +135,17 @@ export default function OrderConfirmationPage() {
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-black/50">
-                  Dfamiliz has received your order and will begin preparing
-                  it for delivery.
+                  {order.fulfillmentType === "Pickup"
+                    ? "Dfamiliz has received your order and will coordinate collection at your pickup point."
+                    : "Dfamiliz has received your order and will begin preparing it for delivery."}
                 </p>
               </div>
             </div>
 
-            {/* Delivery Details */}
+            {/* Fulfillment and Contact Details */}
             <div className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
               <h2 className="text-xl font-black text-[#171717]">
-                Delivery Details
+                Fulfillment and Contact
               </h2>
 
               <div className="mt-6 space-y-5">
@@ -166,12 +171,26 @@ export default function OrderConfirmationPage() {
 
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-black/35">
-                    Delivery Address
+                    {order.fulfillmentType === "Pickup" ? "Pickup Point / Address" : "Delivery Address"}
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-[#171717]">
                     {order.address}
                   </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-black/35">
+                    Payment status
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#171717]">
+                    {order.paymentMethod || "Not recorded"} - {order.paymentStatus || "Not recorded"}
+                  </p>
+                  {order.paymentStatus !== "Paid" && (
+                    <p className="mt-2 text-sm leading-6 text-black/65">
+                      Continue in WhatsApp to coordinate and confirm payment with Dfamiliz.
+                    </p>
+                  )}
                 </div>
 
                 {order.note && (
@@ -229,10 +248,10 @@ export default function OrderConfirmationPage() {
               </div>
 
               <div className="flex items-center justify-between text-white/60">
-                <span>Delivery</span>
+                <span>{order.fulfillmentType === "Pickup" ? "Pickup" : "Delivery"}</span>
 
                 <span>
-                  ₦{order.deliveryFee.toLocaleString()}
+                  {order.deliveryFee === 0 ? "Free" : `₦${order.deliveryFee.toLocaleString()}`}
                 </span>
               </div>
             </div>
@@ -251,6 +270,11 @@ export default function OrderConfirmationPage() {
 
         {/* Actions */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          {order.whatsappUrl && (
+            <a href={order.whatsappUrl} target="_blank" rel="noreferrer" className="rounded-2xl bg-green-600 px-7 py-3.5 text-center text-sm font-bold text-white transition hover:bg-green-700">
+              Continue to WhatsApp
+            </a>
+          )}
           <Link
             href="/menu"
             className="rounded-2xl bg-orange-500 px-7 py-3.5 text-center text-sm font-bold text-white transition hover:bg-orange-600"

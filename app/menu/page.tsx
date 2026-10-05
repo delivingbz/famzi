@@ -1,22 +1,94 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FoodCard from "@/components/FoodCard";
-import { menuItems } from "@/data/menu";
+import type { MenuItem } from "@/data/menu";
+import { normalizeMenuCategory } from "@/data/menu-categories";
+
+function categoryKey(category: string) {
+  return normalizeMenuCategory(category).toLocaleLowerCase();
+}
 
 export default function MenuPage() {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    let hasInitializedCategory = false;
+
+    async function loadMenu() {
+      try {
+        const response = await fetch("/api/menu", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load menu.");
+        }
+        if (isMounted) {
+          setMenuItems(data.menuItems);
+          setError("");
+          if (!hasInitializedCategory) {
+            const requestedCategory = new URLSearchParams(
+              window.location.search,
+            ).get("category");
+            const matchingItem = requestedCategory
+              ? data.menuItems.find(
+                  (item: MenuItem) =>
+                    categoryKey(item.category) === categoryKey(requestedCategory),
+                )
+              : undefined;
+            setActiveCategory(
+              matchingItem?.category.trim().replace(/\s+/g, " ") ?? "All",
+            );
+            hasInitializedCategory = true;
+          }
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Failed to load menu.",
+          );
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    void loadMenu();
+    const refreshInterval = window.setInterval(() => {
+      void loadMenu();
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(refreshInterval);
+    };
+  }, []);
 
   const categories = [
     "All",
-    ...Array.from(new Set(menuItems.map((item) => item.category))),
+    ...Array.from(
+      menuItems.reduce((uniqueCategories, item) => {
+        const label = item.category.trim().replace(/\s+/g, " ");
+        const key = categoryKey(label);
+        if (label && !uniqueCategories.has(key)) {
+          uniqueCategories.set(key, label);
+        }
+        return uniqueCategories;
+      }, new Map<string, string>()).values(),
+    ),
   ];
 
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
       const matchesCategory =
-        activeCategory === "All" || item.category === activeCategory;
+        activeCategory === "All" ||
+        categoryKey(item.category) === categoryKey(activeCategory);
 
       const matchesSearch =
         item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -103,7 +175,17 @@ export default function MenuPage() {
             </span>
           </div>
 
-          {filteredItems.length > 0 ? (
+          {isLoading ? (
+            <div className="rounded-3xl bg-white p-10 text-center shadow-sm">
+              <p className="text-sm font-semibold text-black/50">
+                Loading menu...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="rounded-3xl border border-red-200 bg-red-50 p-6">
+              <p className="text-sm font-semibold text-red-600">{error}</p>
+            </div>
+          ) : filteredItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
               {filteredItems.map((item) => (
                 <FoodCard key={item.id} item={item} />

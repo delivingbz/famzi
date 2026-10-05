@@ -1,9 +1,13 @@
-import FoodCard from "@/components/FoodCard";
-import Navbar from "@/components/Navbar";
-import { menuItems } from "@/data/menu";
+import PopularMeals from "@/components/PopularMeals";
+import HomeHeroImage from "@/components/HomeHeroImage";
+import QuickMeals from "@/components/QuickMeals";
+import FantasyMealRequest from "@/components/FantasyMealRequest";
+import HomeScrollReveal from "@/components/HomeScrollReveal";
+import Link from "next/link";
 
 const categories = [
   "Rice Meals",
+  "Sides",
   "Sandwiches",
   "Shawarma",
   "Drinks",
@@ -17,6 +21,7 @@ export default function Home() {
       {/* <Navbar /> */}
 
       {/* Hero */}
+      <HomeScrollReveal variant="soft">
       <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-2 lg:px-8 lg:py-24">
           {/* Hero Text */}
@@ -67,13 +72,14 @@ export default function Home() {
                 <div className="text-7xl sm:text-8xl">🍛</div>
 
                 <p className="mt-5 text-sm font-bold uppercase tracking-[0.2em] text-black/40">
-                  Food Image Placeholder
+                  Jollof Rice
                 </p>
 
                 <p className="mt-2 max-w-xs text-sm text-black/40">
-                  Our final Dfamiliz food photography will replace this image.
+                  Freshly prepared by Dfamiliz.
                 </p>
               </div>
+              <HomeHeroImage />
             </div>
 
             {/* Floating Badge */}
@@ -84,8 +90,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </HomeScrollReveal>
 
       {/* Popular Meals */}
+      <HomeScrollReveal variant="right">
       <section id="popular" className="bg-white py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -111,17 +119,13 @@ export default function Home() {
             </a>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {menuItems
-              .filter((item) => item.popular)
-              .map((item) => (
-                <FoodCard key={item.id} item={item} />
-              ))}
-          </div>
+          <PopularMeals />
         </div>
       </section>
+      </HomeScrollReveal>
 
       {/* Categories */}
+      <HomeScrollReveal variant="left">
       <section id="menu" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
@@ -134,8 +138,9 @@ export default function Home() {
 
           <div className="mt-8 flex gap-3 overflow-x-auto pb-3">
             {categories.map((category, index) => (
-              <button
+              <Link
                 key={category}
+                href={`/menu?category=${encodeURIComponent(category)}`}
                 className={`whitespace-nowrap rounded-full px-5 py-3 text-sm font-bold transition ${
                   index === 0
                     ? "bg-[#171717] text-white"
@@ -143,13 +148,22 @@ export default function Home() {
                 }`}
               >
                 {category}
-              </button>
+              </Link>
             ))}
           </div>
         </div>
       </section>
+      </HomeScrollReveal>
+
+      <HomeScrollReveal variant="scale">
+        <QuickMeals />
+      </HomeScrollReveal>
+      <HomeScrollReveal variant="soft">
+        <FantasyMealRequest />
+      </HomeScrollReveal>
 
       {/* Why FAMZI */}
+      <HomeScrollReveal variant="up">
       <section id="about" className="bg-[#171717] py-16 text-white sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 md:grid-cols-3">
@@ -186,8 +200,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </HomeScrollReveal>
 
       {/* CTA */}
+      <HomeScrollReveal variant="right">
       <section id="contact" className="bg-orange-500 py-14 text-white">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 sm:px-6 md:flex-row md:items-center lg:px-8">
           <div>
@@ -208,6 +224,7 @@ export default function Home() {
           </a>
         </div>
       </section>
+      </HomeScrollReveal>
 
       {/* Footer */}
       <footer className="bg-[#111111] py-8 text-white">

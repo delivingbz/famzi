@@ -1,11 +1,47 @@
 "use client";
 
-import { createContext, useContext, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { MenuItem } from "@/data/menu";
 
 export type CartItem = MenuItem & {
   quantity: number;
 };
+
+export type CartMenuChanges = {
+  priceChanges: { name: string; oldPrice: number; newPrice: number }[];
+  renamedItems: { oldName: string; newName: string }[];
+  unavailableItems: string[];
+};
+
+const MENU_REVIEW_STORAGE_KEY = "famzi-menu-review";
+
+function hasMenuChanges(changes: CartMenuChanges) {
+  return (
+    changes.priceChanges.length > 0 ||
+    changes.renamedItems.length > 0 ||
+    changes.unavailableItems.length > 0
+  );
+}
+
+function readSavedMenuChanges(): CartMenuChanges | null {
+  if (typeof window === "undefined") return null;
+  const savedChanges = window.localStorage.getItem(MENU_REVIEW_STORAGE_KEY);
+  if (!savedChanges) return null;
+
+  try {
+    const parsedChanges = JSON.parse(savedChanges) as CartMenuChanges;
+    return hasMenuChanges(parsedChanges) ? parsedChanges : null;
+  } catch {
+    window.localStorage.removeItem(MENU_REVIEW_STORAGE_KEY);
+    return null;
+  }
+}
 
 type CartContextType = {
   cartItems: CartItem[];
@@ -14,6 +50,9 @@ type CartContextType = {
   increaseQuantity: (id: number) => void;
   decreaseQuantity: (id: number) => void;
   clearCart: () => void;
+  refreshCartFromMenu: () => Promise<CartMenuChanges | null>;
+  menuReviewChanges: CartMenuChanges | null;
+  acknowledgeMenuChanges: () => void;
   cartCount: number;
   cartTotal: number;
 };
@@ -97,6 +136,8 @@ export default function CartProvider({
     getCart,
     getServerCart
   );
+  const [menuReviewChanges, setMenuReviewChanges] =
+    useState<CartMenuChanges | null>(null);
 
   const addToCart = (item: MenuItem) => {
     const existingItem = items.find(
@@ -163,7 +204,76 @@ export default function CartProvider({
 
   const clearCart = () => {
     updateCart([]);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(MENU_REVIEW_STORAGE_KEY);
+    }
+    setMenuReviewChanges(null);
   };
+
+  const refreshCartFromMenu = useCallback(async () => {
+    const response = await fetch("/api/menu", { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to check current menu prices.");
+    }
+
+    const availableItems = new Map<number, MenuItem>(
+      data.menuItems.map((item: MenuItem) => [item.id, item] as const),
+    );
+    const currentItems = getCart();
+    const changes: CartMenuChanges = {
+      priceChanges: [],
+      renamedItems: [],
+      unavailableItems: [],
+    };
+    const refreshedItems = currentItems.flatMap((item) => {
+      const currentMenuItem = availableItems.get(item.id);
+      if (!currentMenuItem) {
+        changes.unavailableItems.push(item.name);
+        return [];
+      }
+
+      if (item.price !== currentMenuItem.price) {
+        changes.priceChanges.push({
+          name: currentMenuItem.name,
+          oldPrice: item.price,
+          newPrice: currentMenuItem.price,
+        });
+      }
+      if (item.name !== currentMenuItem.name) {
+        changes.renamedItems.push({
+          oldName: item.name,
+          newName: currentMenuItem.name,
+        });
+      }
+
+      return [{ ...currentMenuItem, quantity: item.quantity }];
+    });
+
+    const hasChanges = hasMenuChanges(changes);
+    if (hasChanges) {
+      updateCart(refreshedItems);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          MENU_REVIEW_STORAGE_KEY,
+          JSON.stringify(changes),
+        );
+      }
+      setMenuReviewChanges(changes);
+      return changes;
+    }
+
+    const savedChanges = readSavedMenuChanges();
+    setMenuReviewChanges(savedChanges);
+    return savedChanges;
+  }, []);
+
+  const acknowledgeMenuChanges = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(MENU_REVIEW_STORAGE_KEY);
+    }
+    setMenuReviewChanges(null);
+  }, []);
 
   const cartCount = items.reduce(
     (total, item) => total + item.quantity,
@@ -184,6 +294,9 @@ export default function CartProvider({
         increaseQuantity,
         decreaseQuantity,
         clearCart,
+        refreshCartFromMenu,
+        menuReviewChanges,
+        acknowledgeMenuChanges,
         cartCount,
         cartTotal,
       }}

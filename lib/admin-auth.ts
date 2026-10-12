@@ -1,13 +1,22 @@
 // FAMZI FILE GUIDE: Server-only password hashing, session signing, token hashing, and admin checks.
 import "server-only";
-import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
+import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 export const ADMIN_SESSION_COOKIE = "famzi_admin_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 12;
-const scryptAsync = promisify(scrypt);
+function scryptAsync(password: string, salt: Buffer, keyLength: number, options: ScryptOptions) {
+  return new Promise<Buffer>((resolve, reject) => {
+    scrypt(password, salt, keyLength, options, (error, derivedKey) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(derivedKey);
+    });
+  });
+}
 
 function getAuthSecret() {
   const secret = process.env.AUTH_SECRET;

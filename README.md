@@ -21,8 +21,9 @@ The visual direction uses warm cream backgrounds, orange accents, clear typograp
 - Menu loaded from the database, with category filters and search.
 - Cart saved in the customer's browser, with quantity controls and item removal.
 - Cart and checkout refresh prices and availability. Customers review changes and confirm a changed total before ordering.
-- Checkout supports delivery and customer-specified pickup points. A valid phone number and address or pickup point are required. Delivery costs **NGN 1,000**; pickup has no delivery fee.
+- Checkout supports delivery and customer-specified pickup points. A valid phone number and address or pickup point are required. Delivery fees are discussed and confirmed in WhatsApp; pickup has no delivery fee.
 - Orders are saved before checkout opens WhatsApp with the order details prefilled. Staff confirm payment in WhatsApp and mark the order Paid in Admin.
+- Customers can opt in at checkout to WhatsApp order updates. Admin status changes to Received, Preparing, and Out for Delivery send an approved WhatsApp template when the Cloud API is configured. Admin status history is saved with each order.
 - Order confirmation page with the order reference and summary.
 - Quick Meals can be added to the cart in these sizes: quarter liter, half liter, 1 liter, and 1 pot.
 - Fantasy Meal submissions are saved for staff and can be continued in WhatsApp with the request prefilled.
@@ -117,6 +118,11 @@ Responsive review targets from the product brief are small phones (320 to 375px)
    | `ADMIN_RESET_EMAIL_FROM` | Optional fallback sender if `ADMIN_EMAIL_FROM` is empty |
    | `APP_URL` | Public base URL used to create email links (local example: `http://localhost:3000`) |
    | `WHATSAPP_BUSINESS_NUMBER` | Business WhatsApp number with country code and digits only, for example `2348012345678` |
+   | `WHATSAPP_ACCESS_TOKEN` | Meta WhatsApp Cloud API access token for status notifications |
+   | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from the WhatsApp API setup |
+   | `WHATSAPP_API_VERSION` | Graph API version configured for the Meta app |
+   | `WHATSAPP_ORDER_STATUS_TEMPLATE` | Approved utility template name with body placeholders for customer name, order ID, and status |
+   | `WHATSAPP_ORDER_STATUS_LANGUAGE` | Approved template language code, usually `en` |
 
    Keep `.env` private. Do not commit real credentials or secrets.
 

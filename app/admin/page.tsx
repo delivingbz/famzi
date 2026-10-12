@@ -28,11 +28,13 @@ type Order = {
 };
 
 const statusStyles: Record<string, string> = {
+  New: "bg-amber-50 text-amber-700",
   Received: "bg-orange-50 text-orange-600",
   Accepted: "bg-purple-50 text-purple-600",
   Preparing: "bg-blue-50 text-blue-600",
   Ready: "bg-emerald-50 text-emerald-600",
   Completed: "bg-green-50 text-green-600",
+  "Out for Delivery": "bg-cyan-50 text-cyan-700",
 };
 
 export default function AdminDashboardPage() {
@@ -88,7 +90,7 @@ useEffect(() => {
 }, []);
 
   const newOrders = orders.filter(
-    (order) => order.status === "Received"
+    (order) => order.status === "New" || order.status === "Received"
   ).length;
 
   const acceptedOrders = orders.filter(
@@ -169,7 +171,7 @@ useEffect(() => {
                     </div>
 
                     <p className="mt-4 text-xs font-medium text-black/35">
-                      Awaiting acceptance
+                      Awaiting staff action
                     </p>
                   </div>
 

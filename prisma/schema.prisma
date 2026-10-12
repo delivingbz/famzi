@@ -21,9 +21,21 @@ model Order {
   subtotal        Int
   deliveryFee     Int
   total           Int
-  status          String      @default("Received")
+  status          String      @default("New")
+  whatsappUpdatesOptIn Boolean @default(false)
   createdAt       DateTime    @default(now())
   items           OrderItem[]
+  statusEvents    OrderStatusEvent[]
+}
+
+model OrderStatusEvent {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  status    String
+  createdAt DateTime @default(now())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
 }
 
 model OrderItem {

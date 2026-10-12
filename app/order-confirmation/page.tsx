@@ -249,10 +249,10 @@ export default function OrderConfirmationPage() {
               </div>
 
               <div className="flex items-center justify-between text-white/60">
-                <span>{order.fulfillmentType === "Pickup" ? "Pickup" : "Delivery"}</span>
+                <span>{order.fulfillmentType === "Pickup" ? "Pickup" : "Delivery fee"}</span>
 
                 <span>
-                  {order.deliveryFee === 0 ? "Free" : `₦${order.deliveryFee.toLocaleString()}`}
+                  {order.fulfillmentType === "Pickup" ? "Free" : "Discuss on WhatsApp"}
                 </span>
               </div>
             </div>

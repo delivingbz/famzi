@@ -19,7 +19,7 @@ This guide maps the maintained source files to the parts of the app they own. Ea
 | `app/admin/layout.tsx` | Checks the signed session before rendering any admin page. |
 | `app/admin/page.tsx` | Staff dashboard. |
 | `app/admin/orders/page.tsx` | Staff order list. |
-| `app/admin/orders/[id]/page.tsx` | Staff view and updates for one order. |
+| `app/admin/orders/[id]/page.tsx` | Staff view, status history, delivery progression, and updates for one order. |
 | `app/admin/menu/page.tsx` | Menu item editing, image upload, and availability controls. |
 | `app/admin/meal-requests/page.tsx` | Staff inbox for customer meal requests. |
 | `app/admin/reports/page.tsx` | Order and payment reporting. |
@@ -36,7 +36,7 @@ This guide maps the maintained source files to the parts of the app they own. Ea
 | --- | --- |
 | `app/api/menu/route.ts` | Public menu response and category normalization. |
 | `app/api/menu/images/[filename]/route.ts` | Serves uploaded menu images by validated filename. |
-| `app/api/orders/route.ts` | Creates orders using current menu prices; protects staff order reads and updates. |
+| `app/api/orders/route.ts` | Creates orders using current menu prices; stores status history and sends opted-in WhatsApp updates on key stages. |
 | `app/api/meal-requests/route.ts` | Accepts public meal requests and protects staff request operations. |
 | `app/api/admin/menu/route.ts` | Authenticated menu listing, creation, and editing. |
 | `app/api/admin/menu/upload/route.ts` | Authenticated image upload and file validation. |
@@ -69,12 +69,14 @@ This guide maps the maintained source files to the parts of the app they own. Ea
 | `lib/admin-auth.ts` | Password hashing, token hashing, session signing, and session validation. |
 | `lib/admin-email.ts` | Resend configuration and transactional email sending. |
 | `lib/prisma.ts` | Shared Prisma Client instance using the PostgreSQL adapter. |
+| `lib/whatsapp.ts` | Sends approved WhatsApp Cloud API order status templates when configured. |
 
 ## Database
 
 | File | Responsibility |
 | --- | --- |
 | `prisma/schema.prisma` | Database models and generated client destination. |
+| `prisma/migrations/20261012120000_add_order_tracking_and_whatsapp_opt_in/migration.sql` | Adds customer WhatsApp update consent and persisted order status history. |
 | `prisma/seed.ts` | Idempotent initial menu seed data. |
 | `prisma/migrations/20260927200530_create_orders/migration.sql` | Creates orders and order items. |
 | `prisma/migrations/20260928223120_create_menu_items/migration.sql` | Creates menu items. |

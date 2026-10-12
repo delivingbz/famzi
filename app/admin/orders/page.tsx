@@ -86,7 +86,7 @@ export default function AdminOrdersPage() {
   }, []);
 
   const receivedOrders = orders.filter(
-    (order) => order.status === "Received"
+    (order) => order.status === "New" || order.status === "Received"
   ).length;
 
   const preparingOrders = orders.filter(
@@ -131,7 +131,7 @@ export default function AdminOrdersPage() {
 
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wide text-black/40">
-              Received
+              New / Received
             </p>
 
             <p className="mt-2 text-2xl font-black text-orange-500">

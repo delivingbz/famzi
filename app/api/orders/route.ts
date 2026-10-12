@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hasAdminSession } from "@/lib/admin-auth";
+import { sendOrderStatusWhatsAppUpdate } from "@/lib/whatsapp";
 
 function isValidPhoneNumber(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
       address,
       fulfillmentType,
       paymentMethod,
+      whatsappUpdatesOptIn,
       note,
       items,
     } = body;
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
       !address.trim() ||
       !["Delivery", "Pickup"].includes(fulfillmentType) ||
       paymentMethod !== "WhatsApp" ||
+      typeof whatsappUpdatesOptIn !== "boolean" ||
       (note !== undefined && typeof note !== "string") ||
       !Array.isArray(items) ||
       items.length === 0
@@ -109,7 +112,8 @@ export async function POST(request: Request) {
       (sum, item) => sum + item.price * item.quantity,
       0
     );
-    const validatedDeliveryFee = fulfillmentType === "Delivery" ? 1000 : 0;
+    // Delivery charges are confirmed with the customer in WhatsApp.
+    const validatedDeliveryFee = 0;
     const whatsappNumber = process.env.WHATSAPP_BUSINESS_NUMBER?.replace(/\D/g, "");
     if (!whatsappNumber) {
       return NextResponse.json(
@@ -127,16 +131,22 @@ export async function POST(request: Request) {
         fulfillmentType,
         paymentMethod,
         paymentStatus: "Awaiting WhatsApp Confirmation",
+        status: "New",
         note: note?.trim() || null,
         subtotal: validatedSubtotal,
         deliveryFee: validatedDeliveryFee,
         total: validatedSubtotal + validatedDeliveryFee,
+        whatsappUpdatesOptIn,
         items: {
           create: orderItems,
+        },
+        statusEvents: {
+          create: { status: "New" },
         },
       },
       include: {
         items: true,
+        statusEvents: { orderBy: { createdAt: "asc" } },
       },
     });
 
@@ -145,6 +155,7 @@ export async function POST(request: Request) {
       `Name: ${order.customerName}`,
       `Phone: ${order.phone}`,
       `${order.fulfillmentType === "Pickup" ? "Pickup point" : "Delivery address"}: ${order.address}`,
+      ...(order.fulfillmentType === "Delivery" ? ["Delivery fee: To be discussed and confirmed on WhatsApp."] : []),
       "Items:",
       ...order.items.map((item) => `- ${item.name} x ${item.quantity}: NGN ${(item.price * item.quantity).toLocaleString("en-NG")}`),
       `Total: NGN ${order.total.toLocaleString("en-NG")}`,
@@ -164,7 +175,12 @@ export async function POST(request: Request) {
     console.error("Failed to create order:", error);
 
     return NextResponse.json(
-      { error: "Failed to create order." },
+      {
+        error: "Failed to create order.",
+        ...(process.env.NODE_ENV === "development" && error instanceof Error
+          ? { details: error.message }
+          : {}),
+      },
       { status: 500 }
     );
   }
@@ -179,6 +195,7 @@ export async function GET() {
     const orders = await prisma.order.findMany({
       include: {
         items: true,
+        statusEvents: { orderBy: { createdAt: "asc" } },
       },
       orderBy: {
         createdAt: "desc",
@@ -206,13 +223,15 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, status, paymentStatus } = body;
+    const { id, status, paymentStatus, retryWhatsAppUpdate } = body;
     const allowedStatuses = [
       "Received",
       "Accepted",
       "Preparing",
       "Ready",
+      "Out for Delivery",
       "Completed",
+      "New",
     ];
 
     if (!Number.isSafeInteger(id) || id < 1) {
@@ -227,6 +246,27 @@ export async function PATCH(request: Request) {
         { error: "Invalid order status." },
         { status: 400 }
       );
+    }
+    if (retryWhatsAppUpdate !== undefined && typeof retryWhatsAppUpdate !== "boolean") {
+      return NextResponse.json({ error: "Invalid WhatsApp retry request." }, { status: 400 });
+    }
+
+    const previousOrder = await prisma.order.findUnique({
+      where: { id: Number(id) },
+      select: {
+        status: true,
+        fulfillmentType: true,
+        phone: true,
+        customerName: true,
+        orderId: true,
+        whatsappUpdatesOptIn: true,
+      },
+    });
+    if (!previousOrder) {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
+    if (status === "Out for Delivery" && previousOrder.fulfillmentType !== "Delivery") {
+      return NextResponse.json({ error: "Only delivery orders can be marked out for delivery." }, { status: 400 });
     }
 
     if (
@@ -249,19 +289,38 @@ export async function PATCH(request: Request) {
       );
     }
 
+    const statusChanged = status !== undefined && status !== previousOrder.status;
     const order = await prisma.order.update({
       where: {
         id: Number(id),
       },
-      data: updateData,
+      data: {
+        ...updateData,
+        ...(statusChanged ? { statusEvents: { create: { status: status! } } } : {}),
+      },
       include: {
         items: true,
+        statusEvents: { orderBy: { createdAt: "asc" } },
       },
     });
+
+    const shouldSendNotification = status !== undefined &&
+      ["Received", "Preparing", "Out for Delivery"].includes(status) &&
+      (statusChanged || retryWhatsAppUpdate === true);
+    const notification = shouldSendNotification
+      ? await sendOrderStatusWhatsAppUpdate({
+          phone: previousOrder.phone,
+          customerName: previousOrder.customerName,
+          orderId: previousOrder.orderId,
+          status,
+          optedIn: previousOrder.whatsappUpdatesOptIn,
+        })
+      : undefined;
 
     return NextResponse.json({
       success: true,
       order,
+      notification,
     });
   } catch (error) {
     console.error("Failed to update order:", error);

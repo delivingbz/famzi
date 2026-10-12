@@ -19,13 +19,15 @@ export default function CheckoutPage() {
 
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsappUpdatesOptIn, setWhatsappUpdatesOptIn] = useState(false);
   const [address, setAddress] = useState("");
   const [fulfillmentType, setFulfillmentType] = useState<"Delivery" | "Pickup">("Delivery");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const deliveryFee = fulfillmentType === "Delivery" ? 1000 : 0;
-  const grandTotal = cartTotal + deliveryFee;
+  // Delivery charges are agreed with the customer in WhatsApp after checkout.
+  const deliveryFee = 0;
+  const grandTotal = cartTotal;
   const [reviewedGrandTotal, setReviewedGrandTotal] = useState<number | null>(null);
   const needsMenuReview = Boolean(
     menuReviewChanges &&
@@ -97,6 +99,7 @@ export default function CheckoutPage() {
         address: address.trim(),
         fulfillmentType,
         paymentMethod: "WhatsApp",
+        whatsappUpdatesOptIn,
         note: note.trim(),
         items: cartItems,
         subtotal: cartTotal,
@@ -116,7 +119,9 @@ export default function CheckoutPage() {
         );
       }
       throw new Error(
-        data.error || "Failed to place your order."
+        data.details
+          ? `${data.error || "Failed to place your order."} ${data.details}`
+          : data.error || "Failed to place your order."
       );
     }
 
@@ -357,6 +362,18 @@ export default function CheckoutPage() {
                 />
               </div>
 
+              <label className="flex items-start gap-3 rounded-2xl border border-black/10 bg-[#fafafa] p-4 text-sm text-black/70">
+                <input
+                  type="checkbox"
+                  checked={whatsappUpdatesOptIn}
+                  onChange={(event) => setWhatsappUpdatesOptIn(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-orange-500"
+                />
+                <span>
+                  I agree to receive WhatsApp status updates for this order, including when it is received, being prepared, and out for delivery.
+                </span>
+              </label>
+
               <div className="rounded-2xl border border-green-100 bg-green-50 p-5">
                 <p className="text-sm font-black text-[#171717]">Confirm payment on WhatsApp</p>
                 <p className="mt-2 text-sm leading-6 text-black/60">
@@ -452,10 +469,10 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex items-center justify-between text-white/60">
-                <span>{fulfillmentType === "Delivery" ? "Delivery" : "Pickup"}</span>
+                <span>{fulfillmentType === "Delivery" ? "Delivery fee" : "Pickup"}</span>
 
                 <span>
-                  {deliveryFee === 0 ? "Free" : `₦${deliveryFee.toLocaleString()}`}
+                  {fulfillmentType === "Delivery" ? "Discuss on WhatsApp" : "Free"}
                 </span>
               </div>
             </div>

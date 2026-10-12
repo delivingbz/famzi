@@ -12,6 +12,8 @@ type OrderItem = {
   quantity: number;
 };
 
+type OrderStatusEvent = { id: number; status: string; createdAt: string };
+
 type Order = {
   id: number;
   orderId: string;
@@ -26,31 +28,10 @@ type Order = {
   deliveryFee: number;
   total: number;
   status: string;
+  whatsappUpdatesOptIn: boolean;
   createdAt: string;
   items: OrderItem[];
-};
-
-const orderStatuses = [
-  "Received",
-  "Accepted",
-  "Preparing",
-  "Ready",
-  "Completed",
-] as const;
-
-const nextStatusMap: Record<string, string | null> = {
-  Received: "Accepted",
-  Accepted: "Preparing",
-  Preparing: "Ready",
-  Ready: "Completed",
-  Completed: null,
-};
-
-const nextStatusLabel: Record<string, string> = {
-  Received: "Accept Order",
-  Accepted: "Start Preparing",
-  Preparing: "Mark Ready",
-  Ready: "Complete Order",
+  statusEvents: OrderStatusEvent[];
 };
 
 export default function AdminOrderDetailsPage() {
@@ -59,6 +40,27 @@ export default function AdminOrderDetailsPage() {
   const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
+  const [notificationFailed, setNotificationFailed] = useState(false);
+  const orderStatuses = order?.fulfillmentType === "Delivery"
+    ? ["New", "Received", "Accepted", "Preparing", "Ready", "Out for Delivery", "Completed"]
+    : ["New", "Received", "Accepted", "Preparing", "Ready", "Completed"];
+  const nextStatusMap: Record<string, string | null> = {
+    New: "Received",
+    Received: "Accepted",
+    Accepted: "Preparing",
+    Preparing: "Ready",
+    Ready: order?.fulfillmentType === "Delivery" ? "Out for Delivery" : "Completed",
+    "Out for Delivery": "Completed",
+    Completed: null,
+  };
+  const nextStatusLabel: Record<string, string> = {
+    New: "Mark Order Received",
+    Received: "Accept Order",
+    Accepted: "Start Preparing",
+    Preparing: "Mark Ready",
+    Ready: order?.fulfillmentType === "Delivery" ? "Mark Out for Delivery" : "Complete Pickup",
+    "Out for Delivery": "Complete Delivery",
+  };
 
   useEffect(() => {
     async function loadOrder() {
@@ -104,7 +106,7 @@ export default function AdminOrderDetailsPage() {
     loadOrder();
   }, []);
 
-  const updateStatus = async (status: string) => {
+  const updateStatus = async (status: string, retryWhatsAppUpdate = false) => {
     if (!order) {
       return;
     }
@@ -121,6 +123,7 @@ export default function AdminOrderDetailsPage() {
         body: JSON.stringify({
           id: order.id,
           status,
+          retryWhatsAppUpdate,
         }),
       });
 
@@ -133,9 +136,9 @@ export default function AdminOrderDetailsPage() {
       }
 
       setOrder(data.order);
-      setUpdateMessage(
-        `Order status updated to ${status}.`
-      );
+      setNotificationFailed(data.notification?.status === "failed");
+      const notification = data.notification?.message;
+      setUpdateMessage(`Order status updated to ${status}.${notification ? ` ${notification}` : ""}`);
     } catch (error) {
       console.error(
         "Failed to update order status:",
@@ -212,13 +215,9 @@ export default function AdminOrderDetailsPage() {
     );
   }
 
-  const nextStatus = order
-  ? nextStatusMap[order.status]
-  : null;
+  const nextStatus = nextStatusMap[order.status];
 
-const nextActionLabel = order
-  ? nextStatusLabel[order.status]
-  : null;
+const nextActionLabel = nextStatusLabel[order.status];
 
 const currentStatusIndex = order
   ? orderStatuses.findIndex(
@@ -302,6 +301,8 @@ const currentStatusIndex = order
         Received
       </option>
 
+      <option value="New">New</option>
+
       <option value="Accepted">
         Accepted
       </option>
@@ -310,13 +311,9 @@ const currentStatusIndex = order
         Preparing
       </option>
 
-      <option value="Ready">
-        Ready
-      </option>
-
-      <option value="Completed">
-        Completed
-      </option>
+      <option value="Ready">Ready</option>
+      {order.fulfillmentType === "Delivery" && <option value="Out for Delivery">Out for Delivery</option>}
+      <option value="Completed">Completed</option>
     </select>
   </details>
 
@@ -344,14 +341,24 @@ const currentStatusIndex = order
   {!isUpdating && updateMessage && (
     <p
       className={`text-xs font-semibold ${
-        updateMessage.startsWith("Order status updated") ||
-        updateMessage.startsWith("Payment status updated")
-          ? "text-green-600"
-          : "text-red-600"
+        updateMessage.startsWith("Failed") || updateMessage.includes("could not send") || updateMessage.includes("not configured") || updateMessage.includes("did not opt in")
+          ? "text-amber-700"
+          : updateMessage.startsWith("Order status updated") || updateMessage.startsWith("Payment status updated")
+            ? "text-green-600"
+            : "text-red-600"
       }`}
     >
       {updateMessage}
     </p>
+  )}
+  {!isUpdating && notificationFailed && (
+    <button
+      type="button"
+      onClick={() => void updateStatus(order.status, true)}
+      className="text-xs font-bold text-orange-700 underline"
+    >
+      Retry WhatsApp update
+    </button>
   )}
 
 </div>
@@ -362,7 +369,7 @@ const currentStatusIndex = order
           <div>
             <h2 className="text-xl font-black">Order Progress</h2>
             <p className="mt-1 text-sm text-black/45">
-              Track this order through the kitchen workflow.
+              Track this order through preparation and delivery.
             </p>
           </div>
 
@@ -422,6 +429,19 @@ const currentStatusIndex = order
               );
             })}
           </div>
+          <div className="mt-5 border-t border-black/5 pt-5">
+            <h3 className="text-sm font-black">Status update history</h3>
+            {order.statusEvents.length ? (
+              <ol className="mt-3 space-y-2">
+                {order.statusEvents.map((event) => (
+                  <li key={event.id} className="flex flex-wrap justify-between gap-2 text-sm">
+                    <span className="font-semibold">{event.status}</span>
+                    <time className="text-black/45">{new Date(event.createdAt).toLocaleString()}</time>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="mt-2 text-xs text-black/45">No saved status history.</p>}
+          </div>
         </section>
 
         {/* Main Content */}
@@ -476,6 +496,11 @@ const currentStatusIndex = order
                       {order.paymentMethod || "Payment not recorded"} · {order.paymentStatus || "Status unavailable"}
                     </span>
                   </p>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-black/35">WhatsApp status updates</p>
+                  <p className="mt-1 text-sm text-black/65">{order.whatsappUpdatesOptIn ? "Customer opted in" : "Customer did not opt in"}</p>
                 </div>
 
                 {/* Note */}
@@ -559,7 +584,7 @@ const currentStatusIndex = order
                   <span>{order.fulfillmentType === "Pickup" ? "Pickup" : "Delivery"}</span>
 
                   <span>
-                    {order.deliveryFee === 0 ? "Free" : `₦${order.deliveryFee.toLocaleString()}`}
+                    {order.fulfillmentType === "Pickup" ? "Free" : "Discuss on WhatsApp"}
                   </span>
                 </div>
 

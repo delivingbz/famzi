@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Checkout form that validates delivery or pickup details and submits an order.
 "use client";
 
 import Link from "next/link";

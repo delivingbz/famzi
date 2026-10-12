@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Shared admin navigation, responsive shell, and active route styling.
 "use client";
 
 import Link from "next/link";

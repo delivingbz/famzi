@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Creates customer orders from current database prices and exposes protected admin order updates.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hasAdminSession } from "@/lib/admin-auth";

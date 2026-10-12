@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Creates customer meal requests and serves protected admin request operations.
 import { NextResponse } from "next/server";
 import { hasAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";

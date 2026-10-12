@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Loads the quick-meal size options and adds a selected option to the cart.
 "use client";
 
 import { useEffect, useState } from "react";
@@ -89,8 +90,10 @@ export default function QuickMeals() {
     }
 
     void loadQuickMeals();
+    const refreshInterval = window.setInterval(() => void loadQuickMeals(), 15000);
     return () => {
       isMounted = false;
+      window.clearInterval(refreshInterval);
     };
   }, []);
 
@@ -151,8 +154,18 @@ export default function QuickMeals() {
                   key={item.id}
                   className="w-full max-w-[250px] rounded-3xl border border-orange-100 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="flex justify-center">
+                  <div className="relative flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-orange-50">
                     <PortionIcon fill={size.fill} pot={size.icon === "pot"} />
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    )}
                   </div>
                   <h3 className="mt-3 text-lg font-black text-[#171717]">
                     {size.label}
@@ -160,15 +173,21 @@ export default function QuickMeals() {
                   <p className="mt-1 text-sm font-medium text-black/45">
                     {size.icon === "pot" ? "Family pot" : "Fresh soup"}
                   </p>
+                  {item.available === false && (
+                    <p className="mt-2 text-xs font-bold uppercase tracking-wide text-red-600">
+                      Unavailable
+                    </p>
+                  )}
                   <p className="mt-4 text-2xl font-black text-orange-600">
                     ₦{item.price.toLocaleString()}
                   </p>
                   <button
                     type="button"
                     onClick={() => addToCart(item)}
-                    className="mt-4 w-full rounded-xl bg-[#171717] px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-500"
+                    disabled={item.available === false}
+                    className="mt-4 w-full rounded-xl bg-[#171717] px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:bg-black/25 disabled:hover:bg-black/25"
                   >
-                    Add to Cart
+                    {item.available === false ? "Unavailable" : "Add to Cart"}
                   </button>
                 </article>
               );

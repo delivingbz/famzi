@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Cart state, local persistence, quantity actions, and current-menu reconciliation.
 "use client";
 
 import {
@@ -218,7 +219,9 @@ export default function CartProvider({
     }
 
     const availableItems = new Map<number, MenuItem>(
-      data.menuItems.map((item: MenuItem) => [item.id, item] as const),
+      data.menuItems
+        .filter((item: MenuItem) => item.available !== false)
+        .map((item: MenuItem) => [item.id, item] as const),
     );
     const currentItems = getCart();
     const changes: CartMenuChanges = {
@@ -250,9 +253,10 @@ export default function CartProvider({
       return [{ ...currentMenuItem, quantity: item.quantity }];
     });
 
+    updateCart(refreshedItems);
+
     const hasChanges = hasMenuChanges(changes);
     if (hasChanges) {
-      updateCart(refreshedItems);
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
           MENU_REVIEW_STORAGE_KEY,

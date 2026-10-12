@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Loads and displays menu items marked popular by staff.
 "use client";
 
 import { useEffect, useState } from "react";

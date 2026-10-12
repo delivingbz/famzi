@@ -1,18 +1,9 @@
+// FAMZI FILE GUIDE: Admin menu editor for item details, prices, photos, popularity, and availability.
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import type { MenuItem } from "@/data/menu";
 import { MENU_CATEGORIES } from "@/data/menu-categories";
-
-type MenuItem = {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  image: string;
-  popular: boolean;
-  available: boolean;
-};
 
 type MenuForm = {
   name: string;
@@ -282,7 +273,11 @@ export default function AdminMenuPage() {
                     ))}
                   </select>
                   <span className="mt-1 block text-xs font-normal text-black/45">
-                    Set soup size and pot options as separate items in the Quick Meals category, each with its own price.
+                    {form.category === "Event Cakes"
+                      ? "Event Cakes appear in the homepage cake carousel. Add the cake size or design to its name, description, price, and photo."
+                      : form.category === "Quick Meals"
+                        ? "Set soup sizes and pot options as separate Quick Meals items, each with its own price."
+                        : "Choose the category customers should see this item in."}
                   </span>
                 </label>
               </div>

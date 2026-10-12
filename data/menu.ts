@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Shared TypeScript shape for menu items returned by the menu API.
 export type MenuItem = {
   id: number;
   name: string;
@@ -5,7 +6,7 @@ export type MenuItem = {
   price: number;
   category: string;
   image: string;
-  popular?: boolean;
-  available?: boolean;
+  popular: boolean;
+  available: boolean;
 };
 

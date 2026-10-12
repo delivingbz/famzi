@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Authenticated menu API for listing, creating, and editing menu records.
 import { NextResponse } from "next/server";
 import { hasAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";

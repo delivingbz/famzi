@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Authenticated image upload endpoint with file type and size checks.
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";

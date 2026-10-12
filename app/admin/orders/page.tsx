@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Admin order list with refresh and status overview.
 "use client";
 
 import Link from "next/link";

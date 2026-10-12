@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Returns the public menu with canonicalized category names.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeMenuCategory } from "@/data/menu-categories";
@@ -5,7 +6,6 @@ import { normalizeMenuCategory } from "@/data/menu-categories";
 export async function GET() {
   try {
     const menuItems = await prisma.menuItem.findMany({
-      where: { available: true },
       orderBy: [{ category: "asc" }, { name: "asc" }],
     });
 

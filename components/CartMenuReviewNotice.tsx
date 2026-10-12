@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Explains menu or price changes found while refreshing the cart.
 import type { CartMenuChanges } from "@/components/CartProvider";
 
 export default function CartMenuReviewNotice({

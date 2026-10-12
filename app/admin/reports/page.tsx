@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Admin sales report that calculates order and payment totals.
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

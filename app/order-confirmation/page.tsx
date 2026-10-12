@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Displays the saved order reference and summary after checkout.
 "use client";
 
 import Link from "next/link";

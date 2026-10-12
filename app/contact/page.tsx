@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Contact page with customer-facing ways to reach FAMZI.
 import type { Metadata } from "next";
 import Link from "next/link";
 

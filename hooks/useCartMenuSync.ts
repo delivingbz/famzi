@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Hook that asks the cart provider to refresh menu data when mounted.
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";

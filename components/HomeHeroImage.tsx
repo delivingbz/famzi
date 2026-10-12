@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Loads and displays a featured menu image for the homepage hero.
 "use client";
 
 import { useEffect, useState } from "react";

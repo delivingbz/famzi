@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Client-side entrance animation wrapper for homepage sections.
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";

@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Reusable menu card with image, availability, price, and add-to-cart action.
 
 "use client";
 import { useState } from "react";
@@ -32,6 +33,12 @@ export default function FoodCard({ item }: FoodCardProps) {
             Popular
           </span>
         )}
+
+        {item.available === false && (
+          <span className="absolute bottom-4 left-4 rounded-full bg-black/80 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+            Unavailable
+          </span>
+        )}
       </div>
 
       <div className="p-5">
@@ -58,9 +65,10 @@ export default function FoodCard({ item }: FoodCardProps) {
        
         <button
               onClick={() => addToCart(item)}
-              className="mt-5 w-full rounded-2xl bg-[#171717] py-3 text-sm font-bold text-white transition hover:bg-orange-500"
+              disabled={item.available === false}
+              className="mt-5 w-full rounded-2xl bg-[#171717] py-3 text-sm font-bold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:bg-black/25 disabled:hover:bg-black/25"
         >
-            Add to Cart
+            {item.available === false ? "Unavailable" : "Add to Cart"}
       </button>
       </div>
     </article>

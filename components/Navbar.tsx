@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Shared customer navigation and responsive menu controls.
 "use client";
 
 import { useState } from "react";

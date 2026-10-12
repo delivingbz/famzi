@@ -29,7 +29,9 @@ The visual direction uses warm cream backgrounds, orange accents, clear typograp
 
 ### Staff experience
 
-- Shared-password admin sign-in at `/admin-login`.
+- Admins sign in at `/admin-login` with a verified email and password.
+- The first admin creates an account at `/admin-setup`, using `ADMIN_PASSWORD` once to prove setup access.
+- Email verification and forgotten-password links are sent through Resend; reset links expire after 30 minutes and verification links after 24 hours.
 - Dashboard and order list with status updates: Received, Accepted, Preparing, Ready, and Completed.
 - Menu management for item names, descriptions, prices, categories, images, popularity, and availability.
 - Fantasy Meal Requests page with customer contact details, request status, and automatic refresh.
@@ -37,7 +39,7 @@ The visual direction uses warm cream backgrounds, orange accents, clear typograp
 
 ### Data and API
 
-PostgreSQL stores menu items, orders, order line items, and Fantasy Meal requests. The App Router API serves the customer menu, validates current availability and prices when an order is submitted, and protects staff-only menu and order operations with the admin session.
+PostgreSQL stores menu items, orders, order line items, Fantasy Meal requests, admin accounts, and one-time auth tokens. The App Router API serves the customer menu, validates current availability and prices when an order is submitted, and protects staff-only menu and order operations with the admin session.
 
 ## Current scope and launch work
 
@@ -108,8 +110,12 @@ Responsive review targets from the product brief are small phones (320 to 375px)
    | Variable | Purpose |
    | --- | --- |
    | `DATABASE_URL` | PostgreSQL connection string |
-   | `ADMIN_PASSWORD` | Shared staff sign-in password |
+   | `ADMIN_PASSWORD` | One-time bootstrap password for creating the first admin account |
    | `AUTH_SECRET` | Random secret used to sign admin sessions; use at least 32 characters |
+   | `RESEND_API_KEY` | Resend API key used for verification and password reset emails |
+   | `ADMIN_EMAIL_FROM` | Sender address on a domain verified with Resend |
+   | `ADMIN_RESET_EMAIL_FROM` | Optional fallback sender if `ADMIN_EMAIL_FROM` is empty |
+   | `APP_URL` | Public base URL used to create email links (local example: `http://localhost:3000`) |
    | `WHATSAPP_BUSINESS_NUMBER` | Business WhatsApp number with country code and digits only, for example `2348012345678` |
 
    Keep `.env` private. Do not commit real credentials or secrets.
@@ -127,7 +133,7 @@ Responsive review targets from the product brief are small phones (320 to 375px)
    npm run dev
    ```
 
-6. Open [http://localhost:3000](http://localhost:3000). Staff can sign in at `/admin-login`.
+6. Open [http://localhost:3000](http://localhost:3000), create the first admin at `/admin-setup`, and verify the email before signing in at `/admin-login`.
 
 ## Common commands
 
@@ -156,6 +162,11 @@ When adding or changing Prisma models, update the schema, create a migration, ap
 | `/checkout` | Delivery checkout |
 | `/order-confirmation` | Confirmation for the last placed order |
 | `/admin-login` | Staff sign-in |
+| `/admin-setup` | First admin account setup |
+| `/admin-verify-email` | Verify the admin email address |
+| `/admin-resend-verification` | Request a new verification link |
+| `/admin-forgot-password` | Request a password reset link |
+| `/admin-reset-password` | Choose a new password from a reset link |
 | `/admin` | Staff dashboard |
 | `/admin/orders` | Order management |
 | `/admin/menu` | Menu and price management |

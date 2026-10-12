@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Customer menu browser with search, category filters, and refresh.
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

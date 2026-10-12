@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Root document layout that installs the shared navigation and cart provider.
 import type { Metadata } from "next";
 import "./globals.css";
 import CartProvider from "@/components/CartProvider";

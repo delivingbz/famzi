@@ -1,15 +1,12 @@
-import { cookies } from "next/headers";
+// FAMZI FILE GUIDE: Protects every admin route by validating the signed admin session.
 import { redirect } from "next/navigation";
-import { ADMIN_SESSION_COOKIE, isAdminSessionValid } from "@/lib/admin-auth";
+import { hasAdminSession } from "@/lib/admin-auth";
 import AdminShell from "@/components/AdminShell";
 
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const cookieStore = await cookies();
-  const session = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
-
-  if (!isAdminSessionValid(session)) {
+  if (!(await hasAdminSession())) {
     redirect("/admin-login");
   }
 

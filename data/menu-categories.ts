@@ -1,14 +1,16 @@
+// FAMZI FILE GUIDE: Canonical menu category names and helpers for legacy category values.
 export const MENU_CATEGORIES = [
   "Rice Meals",
   "Nigerian Rice Dishes",
   "Continental Rice",
   "Soups",
-  "Swallow & Soups",
+  "Swallow",
   "Stews & Sauces",
   "Yam & Plantain",
   "Beans & Legumes",
   "Nigerian Breakfast",
   "Small Chops & Snacks",
+  "Pastries",
   "Suya & Nigerian Grills",
   "Pasta & Noodles",
   "Italian Dishes",
@@ -27,16 +29,19 @@ export const MENU_CATEGORIES = [
   "Seafood",
   "Salads",
   "Appetizers",
-  "Proteins & Sides",
+  "Proteins",
   "Sides",
   "Quick Meals",
   "Desserts",
+  "Event Cakes",
   "Drinks",
 ] as const;
 
 const categoryAliases: Record<string, string> = {
   "rice meal": "Rice Meals",
   "sauce": "Stews & Sauces",
+  "swallow & soups": "Swallow",
+  "proteins & sides": "Proteins",
 };
 
 function categoryKey(value: string) {

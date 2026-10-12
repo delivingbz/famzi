@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Admin dashboard with a compact summary of recent orders.
 "use client";
 
 import Link from "next/link";

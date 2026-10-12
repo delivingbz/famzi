@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Admin inbox for viewing and updating customer meal requests.
 "use client";
 
 import { useCallback, useEffect, useState } from "react";

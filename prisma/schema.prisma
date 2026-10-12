@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Database model definitions and generated Prisma Client output location.
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -55,4 +56,40 @@ model MealRequest {
   description  String
   status       String   @default("Received")
   createdAt    DateTime @default(now())
+}
+
+model AdminUser {
+  id                 Int                      @id @default(autoincrement())
+  email              String                   @unique
+  passwordHash       String
+  emailVerifiedAt    DateTime?
+  sessionVersion     Int                      @default(0)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  resetTokens        AdminPasswordReset[]
+  verificationTokens AdminEmailVerification[]
+}
+
+model AdminPasswordReset {
+  id          Int       @id @default(autoincrement())
+  adminUserId Int
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([expiresAt])
+}
+
+model AdminEmailVerification {
+  id          Int       @id @default(autoincrement())
+  adminUserId Int
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([expiresAt])
 }

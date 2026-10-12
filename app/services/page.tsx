@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Services page describing catering and event food offerings.
 import type { Metadata } from "next";
 import HomeScrollReveal from "@/components/HomeScrollReveal";
 

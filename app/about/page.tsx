@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: About page for the FAMZI brand and ordering service.
 import type { Metadata } from "next";
 import Link from "next/link";
 

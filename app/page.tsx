@@ -1,8 +1,10 @@
+// FAMZI FILE GUIDE: Homepage composition for the hero, popular meals, event cakes, and quick meals.
 import PopularMeals from "@/components/PopularMeals";
 import HomeHeroImage from "@/components/HomeHeroImage";
 import QuickMeals from "@/components/QuickMeals";
 import FantasyMealRequest from "@/components/FantasyMealRequest";
 import HomeScrollReveal from "@/components/HomeScrollReveal";
+import EventCakesShowcase from "@/components/EventCakesShowcase";
 import Link from "next/link";
 
 const categories = [
@@ -122,6 +124,11 @@ export default function Home() {
           <PopularMeals />
         </div>
       </section>
+      </HomeScrollReveal>
+
+      {/* Weddings and Event Cakes */}
+      <HomeScrollReveal variant="scale">
+        <EventCakesShowcase />
       </HomeScrollReveal>
 
       {/* Categories */}

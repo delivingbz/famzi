@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Serves validated uploaded menu images from local persistent storage.
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 

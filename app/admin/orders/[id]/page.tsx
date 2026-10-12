@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Admin detail view for one order, including fulfillment and payment status.
 "use client";
 
 import Link from "next/link";

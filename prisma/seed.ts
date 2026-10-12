@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Seed data for the initial menu and idempotent database setup.
 import { PrismaClient } from "../app/generated/prisma";
 
 const prisma = new PrismaClient();

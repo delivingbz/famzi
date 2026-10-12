@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Clears the admin session and returns staff to the login page.
 "use client";
 
 import { useRouter } from "next/navigation";

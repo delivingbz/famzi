@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Customer form for submitting a custom meal request and WhatsApp follow-up.
 "use client";
 
 import { useState, type FormEvent } from "react";

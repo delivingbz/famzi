@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Shared Prisma client instance configured with the PostgreSQL driver adapter.
 import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 

@@ -1,3 +1,4 @@
+// FAMZI FILE GUIDE: Cart page for reviewing items, quantities, and menu changes.
 "use client";
 
 import Link from "next/link";
@@ -116,7 +117,14 @@ export default function CartPage() {
                 >
                   <div className="flex gap-4">
                     {/* Temporary image area */}
-                    <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-4xl sm:h-28 sm:w-28">
+                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-orange-50 text-4xl sm:h-28 sm:w-28">
+                      {item.image && (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      )}
                       🍽️
                     </div>
 
